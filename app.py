@@ -1,247 +1,441 @@
-import altair as alt
-import joblib
-import pandas as pd
+
 import streamlit as st
+import pandas as pd
+import joblib
+from pathlib import Path
 
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Customer Segmentation",
-    page_icon="👥",
+    page_title="Customer Intelligence | Segmentation",
+    page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="expanded"
 )
 
-# ------------------------------------------------------------------ design
-INK, TEAL, MUTED, LINE, SURFACE = "#1B2A41", "#0F766E", "#5B6B7F", "#D9E1EA", "#F3F6F9"
-
-st.markdown(
-    """
+# ---------------- PROFESSIONAL THEME ----------------
+st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-
-html, body, [class*="st-"], .stMarkdown, label, input {
-    font-family: 'IBM Plex Sans', sans-serif;
-}
-h1, h2, h3, .hero h1, .segment-name { font-family: 'Manrope', sans-serif; letter-spacing: -0.01em; }
-
-#MainMenu, footer { visibility: hidden; }
-.block-container { padding-top: 1.5rem; max-width: 1200px; }
-
-.hero {
-    background: #1B2A41; color: #FFFFFF;
-    padding: 1.8rem 2rem; border-radius: 10px; margin-bottom: 1.5rem;
-}
-.hero h1 { color: #FFFFFF; margin: 0 0 .35rem 0; font-size: 1.9rem; font-weight: 800; }
-.hero p  { color: #C7D2E0; margin: 0; font-size: 1rem; }
-
-.section-title { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 1.05rem; color: #1B2A41; margin-bottom: .1rem; }
-.section-hint  { color: #5B6B7F; font-size: .85rem; margin-bottom: .6rem; }
-
-div[data-testid="stForm"] { border: none; padding: 0; }
-div[data-testid="stVerticalBlockBorderWrapper"] { border-color: #D9E1EA; border-radius: 10px; }
-
-.stFormSubmitButton button {
-    background: #0F766E; color: #FFFFFF; border: none; border-radius: 8px;
-    padding: .7rem 1.6rem; font-weight: 600; width: 100%;
-}
-.stFormSubmitButton button:hover { background: #0B5E58; color: #FFFFFF; }
-.stFormSubmitButton button:focus-visible { outline: 3px solid #99D5CF; outline-offset: 2px; }
-
-.segment-card { background: #F3F6F9; border: 1px solid #D9E1EA; border-left: 6px solid #0F766E;
-                border-radius: 10px; padding: 1.3rem 1.5rem; }
-.segment-label { color: #5B6B7F; font-size: .9rem; margin-bottom: .2rem; }
-.segment-name  { color: #1B2A41; font-size: 2rem; font-weight: 800; margin: 0; }
-.segment-desc  { color: #3B4A5E; margin-top: .4rem; }
-
-div[data-testid="stMetric"] { background: #FFFFFF; border: 1px solid #D9E1EA; border-radius: 10px; padding: .9rem 1.1rem; }
-div[data-testid="stMetricLabel"] p { color: #5B6B7F; }
+    .stApp {
+        background-color: #F5F7FB;
+    }
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1400px;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #111827;
+    }
+    [data-testid="stSidebar"] * {
+        color: #F9FAFB;
+    }
+    .hero {
+        background: linear-gradient(120deg, #102A43, #145374);
+        padding: 28px 30px;
+        border-radius: 16px;
+        color: white;
+        margin-bottom: 22px;
+    }
+    .hero h1 {
+        color: white;
+        font-size: 30px;
+        margin-bottom: 8px;
+    }
+    .hero p {
+        color: #D9EAF5;
+        margin-bottom: 0;
+    }
+    .metric-card {
+        background: white;
+        border: 1px solid #E3E8EF;
+        border-radius: 13px;
+        padding: 19px;
+        min-height: 112px;
+    }
+    .metric-label {
+        color: #64748B;
+        font-size: 13px;
+    }
+    .metric-value {
+        color: #102A43;
+        font-size: 25px;
+        font-weight: 700;
+        margin-top: 7px;
+    }
+    .section-title {
+        color: #102A43;
+        font-size: 21px;
+        font-weight: 700;
+        margin-top: 18px;
+        margin-bottom: 12px;
+    }
+    .result-card {
+        background: white;
+        border: 1px solid #D7E7E9;
+        border-left: 5px solid #0D9488;
+        border-radius: 12px;
+        padding: 23px;
+    }
+    .small-note {
+        color: #64748B;
+        font-size: 12px;
+    }
+    div.stButton > button,
+    div.stFormSubmitButton > button {
+        background-color: #0D9488;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        min-height: 43px;
+        font-weight: 600;
+    }
+    div.stButton > button:hover,
+    div.stFormSubmitButton > button:hover {
+        background-color: #0F766E;
+        color: white;
+    }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
-# ------------------------------------------------------------------ model
-FEATURES = [
-    "Income", "Recency", "MntWines", "MntFruits",
-    "MntMeatProducts", "MntFishProducts", "MntSweetProducts",
-    "MntGoldProds", "NumWebPurchases", "NumCatalogPurchases",
-    "NumStorePurchases", "NumWebVisitsMonth", "Total_Spending",
-    "Total_Purchases", "Total_Campaign_Acceptance",
-]
+# ---------------- LOAD SAVED MODEL ----------------
+BASE_DIR = Path(__file__).resolve().parent
 
-# Give each cluster number a meaningful name once you've profiled your clusters.
-# Example: 0: ("Loyal high spenders", "Frequent buyers with high basket value.")
-CLUSTER_PROFILES: dict[int, tuple[str, str]] = {}
-
-
-@st.cache_resource(show_spinner="Loading model…")
+@st.cache_resource
 def load_artifacts():
-    model = joblib.load("customer_segmentation_kmeans.pkl")
-    scaler = joblib.load("customer_segmentation_scaler.pkl")
-    return model, scaler
-
+    model = joblib.load(BASE_DIR / "customer_segmentation_kmeans.pkl")
+    scaler_obj = joblib.load(BASE_DIR / "customer_segmentation_scaler.pkl")
+    return model, scaler_obj
 
 try:
     kmeans, scaler = load_artifacts()
-except FileNotFoundError as err:
-    st.error(f"Model file not found: {err.filename}. Place the .pkl files next to this script.")
+except Exception as e:
+    st.error("Could not load the saved model or scaler.")
+    st.caption(
+        "Check that both .pkl files are in the same repository folder as app.py."
+    )
     st.stop()
 
-# ------------------------------------------------------------------ presets
-PRESETS = {
-    "Typical customer": dict(income=50000, recency=20, wines=300, fruits=30, meat=200, fish=40,
-                             sweets=25, gold=50, web=4, catalog=3, store=6, visits=5, campaigns=2),
-    "High spender": dict(income=85000, recency=10, wines=900, fruits=80, meat=600, fish=120,
-                         sweets=90, gold=150, web=6, catalog=7, store=9, visits=3, campaigns=3),
-    "Low engagement": dict(income=25000, recency=75, wines=20, fruits=5, meat=25, fish=5,
-                           sweets=5, gold=10, web=1, catalog=0, store=2, visits=7, campaigns=0),
-}
+# Keep the same feature names and order used during training.
+features = [
+    "Income",
+    "Recency",
+    "MntWines",
+    "MntFruits",
+    "MntMeatProducts",
+    "MntFishProducts",
+    "MntSweetProducts",
+    "MntGoldProds",
+    "NumWebPurchases",
+    "NumCatalogPurchases",
+    "NumStorePurchases",
+    "NumWebVisitsMonth",
+    "Total_Spending",
+    "Total_Purchases",
+    "Total_Campaign_Acceptance"
+]
 
+if getattr(scaler, "n_features_in_", len(features)) != len(features):
+    st.error("The scaler feature count does not match the dashboard.")
+    st.stop()
 
-def apply_preset():
-    for key, value in PRESETS[st.session_state["preset"]].items():
-        st.session_state[key] = value
-
-
-for key, value in PRESETS["Typical customer"].items():
-    st.session_state.setdefault(key, value)
-
-# ------------------------------------------------------------------ sidebar
+# ---------------- SIDEBAR ----------------
 with st.sidebar:
-    st.markdown("### Quick start")
-    st.selectbox("Load an example customer", list(PRESETS), key="preset", on_change=apply_preset)
-    st.caption("Pick a profile to fill the form, then adjust any value.")
+    st.markdown("## 📊 Customer IQ")
+    st.caption("CUSTOMER ANALYTICS PLATFORM")
     st.divider()
-    st.markdown("### About the model")
-    st.write(f"**Algorithm:** K-Means  \n**Segments:** {kmeans.n_clusters}  \n**Input features:** {len(FEATURES)}")
-    st.caption("Total spending and total purchases are calculated for you from the values entered.")
 
-# ------------------------------------------------------------------ header
-st.markdown(
-    """
+    st.markdown("### Navigation")
+    page = st.radio(
+        "Choose a page",
+        ["Dashboard", "About the Model"],
+        label_visibility="collapsed"
+    )
+
+    st.divider()
+    st.markdown("### Model Information")
+    st.write("**Algorithm:** K-Means")
+    st.write(f"**Clusters:** {kmeans.n_clusters}")
+    st.write(f"**Input features:** {len(features)}")
+
+    st.divider()
+    st.caption("Customer Segmentation Project")
+
+# ---------------- HEADER ----------------
+st.markdown("""
 <div class="hero">
-  <h1>Customer Segmentation</h1>
-  <p>Enter a customer's spending and activity to find out which segment they belong to.</p>
+    <h1>Customer Intelligence Dashboard</h1>
+    <p>Understand customer purchasing patterns and predict customer segments
+    using machine learning.</p>
 </div>
-""",
-    unsafe_allow_html=True,
+""", unsafe_allow_html=True)
+
+if page == "Dashboard":
+
+    # ---------------- KPI CARDS ----------------
+    m1, m2, m3 = st.columns(3)
+
+    with m1:
+        st.markdown("""
+        <div class="metric-card">
+            <div class="metric-label">CLUSTERING ALGORITHM</div>
+            <div class="metric-value">K-Means</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">CUSTOMER SEGMENTS</div>
+            <div class="metric-value">{kmeans.n_clusters}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">MODEL INPUT FEATURES</div>
+            <div class="metric-value">{len(features)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown(
+        '<div class="section-title">Customer Profile & Prediction</div>',
+        unsafe_allow_html=True
+    )
+
+    st.write(
+        "Enter a customer's details below to predict their assigned cluster."
+    )
+
+    # ---------------- INPUT FORM ----------------
+    with st.form("customer_profile"):
+        st.markdown("#### 01 · Customer Information")
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            income = st.number_input(
+                "Annual Income", min_value=0, value=50000, step=1000
+            )
+            recency = st.number_input(
+                "Days Since Last Purchase", min_value=0, value=20
+            )
+
+        with c2:
+            web_visits = st.number_input(
+                "Website Visits / Month", min_value=0, value=5
+            )
+            campaign_acceptance = st.number_input(
+                "Campaigns Accepted", min_value=0, max_value=5, value=2
+            )
+
+        with c3:
+            web_purchases = st.number_input(
+                "Web Purchases", min_value=0, value=4
+            )
+            catalog_purchases = st.number_input(
+                "Catalog Purchases", min_value=0, value=3
+            )
+
+        st.divider()
+        st.markdown("#### 02 · Spending by Product Category")
+
+        s1, s2, s3 = st.columns(3)
+
+        with s1:
+            wines = st.number_input("Wine Spending", min_value=0, value=300)
+            fruits = st.number_input("Fruit Spending", min_value=0, value=30)
+
+        with s2:
+            meat = st.number_input("Meat Spending", min_value=0, value=200)
+            fish = st.number_input("Fish Spending", min_value=0, value=40)
+
+        with s3:
+            sweets = st.number_input("Sweet Spending", min_value=0, value=25)
+            gold = st.number_input("Gold Product Spending", min_value=0, value=50)
+
+        st.divider()
+        st.markdown("#### 03 · Purchase Activity")
+
+        p1, p2 = st.columns(2)
+
+        with p1:
+            store_purchases = st.number_input(
+                "Store Purchases", min_value=0, value=6
+            )
+
+        with p2:
+            st.caption(
+                "Total purchases are calculated automatically from web, "
+                "catalog and store purchases."
+            )
+
+        submitted = st.form_submit_button(
+            "Predict Customer Segment", use_container_width=True
+        )
+
+    # ---------------- PREDICTION ----------------
+    if submitted:
+        total_spending = wines + fruits + meat + fish + sweets + gold
+        total_purchases = (
+            web_purchases + catalog_purchases + store_purchases
+        )
+
+        customer = pd.DataFrame([{
+            "Income": income,
+            "Recency": recency,
+            "MntWines": wines,
+            "MntFruits": fruits,
+            "MntMeatProducts": meat,
+            "MntFishProducts": fish,
+            "MntSweetProducts": sweets,
+            "MntGoldProds": gold,
+            "NumWebPurchases": web_purchases,
+            "NumCatalogPurchases": catalog_purchases,
+            "NumStorePurchases": store_purchases,
+            "NumWebVisitsMonth": web_visits,
+            "Total_Spending": total_spending,
+            "Total_Purchases": total_purchases,
+            "Total_Campaign_Acceptance": campaign_acceptance
+        }})[features]
+
+        try:
+            scaled_customer = scaler.transform(customer)
+            cluster = int(kmeans.predict(scaled_customer)[0])
+
+            st.divider()
+            st.markdown(
+                '<div class="section-title">Prediction Results</div>',
+                unsafe_allow_html=True
+            )
+
+            r1, r2 = st.columns([1, 1])
+
+            with r1:
+                st.markdown(f"""
+                <div class="result-card">
+                    <div class="metric-label">PREDICTED CUSTOMER SEGMENT</div>
+                    <div class="metric-value">Cluster {cluster}</div>
+                    <p class="small-note">
+                        Assigned by your trained K-Means model.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with r2:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-label">TOTAL SPENDING</div>
+                    <div class="metric-value">{total_spending:,}</div>
+                    <p class="small-note">Sum across six product categories</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+            q1, q2 = st.columns(2)
+
+            with q1:
+                st.metric("Total Purchases", f"{total_purchases:,}")
+
+            with q2:
+                st.metric("Campaigns Accepted", campaign_acceptance)
+
+            st.markdown(
+                '<div class="section-title">Spending Profile</div>',
+                unsafe_allow_html=True
+            )
+
+            spending_data = pd.DataFrame({
+                "Product Category": [
+                    "Wines", "Fruits", "Meat",
+                    "Fish", "Sweets", "Gold Products"
+                ],
+                "Spending": [wines, fruits, meat, fish, sweets, gold]
+            })
+
+            st.bar_chart(
+                spending_data.set_index("Product Category"),
+                y="Spending",
+                color="#0D9488"
+            )
+
+            channel_data = pd.DataFrame({
+                "Purchase Channel": ["Web", "Catalog", "Store"],
+                "Purchases": [
+                    web_purchases, catalog_purchases, store_purchases
+                ]
+            })
+
+            st.markdown("#### Purchase Channels")
+            st.bar_chart(
+                channel_data.set_index("Purchase Channel"),
+                y="Purchases",
+                color="#3B82F6"
+            )
+
+            with st.expander("View customer data sent to the model"):
+                st.dataframe(customer, use_container_width=True)
+
+            st.caption(
+                "Cluster numbers are model-generated groups, not predefined "
+                "customer labels. Interpret each cluster using the cluster "
+                "profiles from your training analysis."
+            )
+
+        except Exception as e:
+            st.error("Prediction failed. Please check the model and scaler.")
+            st.exception(e)
+
+    else:
+        st.info(
+            "Enter the customer details and click **Predict Customer Segment** "
+            "to view the prediction and charts."
+        )
+
+else:
+    # ---------------- MODEL INFORMATION PAGE ----------------
+    st.markdown("## About the Model")
+    st.write(
+        "This project uses K-Means, an unsupervised machine-learning "
+        "algorithm, to group customers based on their income, spending, "
+        "purchase activity, website visits and campaign acceptance."
+    )
+
+    st.markdown("### Model Configuration")
+
+    info = pd.DataFrame({
+        "Property": [
+            "Algorithm",
+            "Number of clusters",
+            "Number of input features",
+            "Scaling"
+        ],
+        "Value": [
+            "K-Means",
+            str(kmeans.n_clusters),
+            str(len(features)),
+            "Saved training scaler"
+        ]
+    })
+
+    st.dataframe(info, hide_index=True, use_container_width=True)
+
+    st.markdown("### Features Used")
+
+    st.dataframe(
+        pd.DataFrame({"Model Features": features}),
+        hide_index=True,
+        use_container_width=True
+    )
+
+    st.info(
+        "Cluster IDs do not automatically indicate high-value or low-value "
+        "customers. Use your training notebook's cluster profiles to assign "
+        "business interpretations."
+    )
+
+# ---------------- FOOTER ----------------
+st.divider()
+st.caption(
+    "Customer Intelligence Dashboard · Built with Python, "
+    "Streamlit, Pandas and Scikit-learn"
 )
 
-
-def section(title: str, hint: str):
-    st.markdown(f'<div class="section-title">{title}</div><div class="section-hint">{hint}</div>',
-                unsafe_allow_html=True)
-
-
-# ------------------------------------------------------------------ form
-with st.form("customer_form"):
-    c1, c2, c3 = st.columns(3)
-
-    with c1, st.container(border=True):
-        section("Profile & engagement", "Who they are and how recently they engaged.")
-        st.number_input("Annual income", min_value=0, step=1000, key="income")
-        st.number_input("Days since last purchase", min_value=0, key="recency")
-        st.number_input("Website visits per month", min_value=0, key="visits")
-        st.number_input("Campaigns accepted", min_value=0, max_value=5, key="campaigns",
-                        help="Number of marketing campaigns accepted, from 0 to 5.")
-
-    with c2, st.container(border=True):
-        section("Spending by category", "Amount spent in each product category.")
-        st.number_input("Wine", min_value=0, key="wines")
-        st.number_input("Meat", min_value=0, key="meat")
-        st.number_input("Fish", min_value=0, key="fish")
-        st.number_input("Fruit", min_value=0, key="fruits")
-        st.number_input("Sweets", min_value=0, key="sweets")
-        st.number_input("Gold products", min_value=0, key="gold")
-
-    with c3, st.container(border=True):
-        section("Purchases by channel", "Number of purchases made through each channel.")
-        st.number_input("Web", min_value=0, key="web")
-        st.number_input("Catalog", min_value=0, key="catalog")
-        st.number_input("Store", min_value=0, key="store")
-
-    submitted = st.form_submit_button("Predict segment")
-
-# ------------------------------------------------------------------ predict
-if submitted:
-    s = st.session_state
-    spending = {
-        "Wine": s.wines, "Meat": s.meat, "Fish": s.fish,
-        "Fruit": s.fruits, "Sweets": s.sweets, "Gold": s.gold,
-    }
-    total_spending = sum(spending.values())
-    total_purchases = s.web + s.catalog + s.store
-
-    customer = pd.DataFrame([{
-        "Income": s.income,
-        "Recency": s.recency,
-        "MntWines": s.wines,
-        "MntFruits": s.fruits,
-        "MntMeatProducts": s.meat,
-        "MntFishProducts": s.fish,
-        "MntSweetProducts": s.sweets,
-        "MntGoldProds": s.gold,
-        "NumWebPurchases": s.web,
-        "NumCatalogPurchases": s.catalog,
-        "NumStorePurchases": s.store,
-        "NumWebVisitsMonth": s.visits,
-        "Total_Spending": total_spending,
-        "Total_Purchases": total_purchases,
-        "Total_Campaign_Acceptance": s.campaigns,
-    }])[FEATURES]
-
-    cluster = int(kmeans.predict(scaler.transform(customer))[0])
-    st.session_state["result"] = dict(
-        cluster=cluster, spending=spending,
-        total_spending=total_spending, total_purchases=total_purchases,
-    )
-
-# ------------------------------------------------------------------ results
-result = st.session_state.get("result")
-
-if result:
-    st.markdown("---")
-    name, desc = CLUSTER_PROFILES.get(
-        result["cluster"],
-        (f"Segment {result['cluster']}", "Add a name and description for this cluster in CLUSTER_PROFILES."),
-    )
-
-    left, right = st.columns([1, 1.4], gap="large")
-
-    with left:
-        st.markdown(
-            f"""
-<div class="segment-card">
-  <div class="segment-label">Predicted segment</div>
-  <p class="segment-name">{name}</p>
-  <div class="segment-desc">{desc}</div>
-</div>
-""",
-            unsafe_allow_html=True,
-        )
-        st.write("")
-        m1, m2 = st.columns(2)
-        m1.metric("Total spending", f"{result['total_spending']:,}")
-        m2.metric("Total purchases", f"{result['total_purchases']:,}")
-        avg = result["total_spending"] / result["total_purchases"] if result["total_purchases"] else 0
-        st.metric("Average spend per purchase", f"{avg:,.1f}")
-
-    with right:
-        section("Where the money goes", "Spending by product category.")
-        chart_df = pd.DataFrame(
-            {"Category": list(result["spending"]), "Amount": list(result["spending"].values())}
-        )
-        chart = (
-            alt.Chart(chart_df)
-            .mark_bar(color=TEAL, cornerRadiusEnd=4)
-            .encode(
-                x=alt.X("Amount:Q", title=None),
-                y=alt.Y("Category:N", sort="-x", title=None),
-                tooltip=["Category", "Amount"],
-            )
-            .properties(height=260)
-            .configure_axis(labelColor=MUTED, gridColor=LINE, domain=False)
-            .configure_view(strokeWidth=0)
-        )
-        st.altair_chart(chart, use_container_width=True)
-else:
-    st.info("Fill in the customer details above and select **Predict segment** to see the result.")
