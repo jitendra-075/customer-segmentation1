@@ -280,23 +280,27 @@ if page == "Dashboard":
             web_purchases + catalog_purchases + store_purchases
         )
 
-        customer = pd.DataFrame([{
-            "Income": income,
-            "Recency": recency,
-            "MntWines": wines,
-            "MntFruits": fruits,
-            "MntMeatProducts": meat,
-            "MntFishProducts": fish,
-            "MntSweetProducts": sweets,
-            "MntGoldProds": gold,
-            "NumWebPurchases": web_purchases,
-            "NumCatalogPurchases": catalog_purchases,
-            "NumStorePurchases": store_purchases,
-            "NumWebVisitsMonth": web_visits,
-            "Total_Spending": total_spending,
-            "Total_Purchases": total_purchases,
-            "Total_Campaign_Acceptance": campaign_acceptance
-        }})[features]
+        
+        customer = pd.DataFrame({
+            "Income": [income],
+            "Recency": [recency],
+            "MntWines": [wines],
+            "MntFruits": [fruits],
+            "MntMeatProducts": [meat],
+            "MntFishProducts": [fish],
+            "MntSweetProducts": [sweets],
+            "MntGoldProds": [gold],
+            "NumWebPurchases": [web_purchases],
+            "NumCatalogPurchases": [catalog_purchases],
+            "NumStorePurchases": [store_purchases],
+            "NumWebVisitsMonth": [web_visits],
+            "Total_Spending": [total_spending],
+            "Total_Purchases": [total_purchases],
+            "Total_Campaign_Acceptance": [campaign_acceptance]
+        })
+
+        customer = customer[features]
+
 
         try:
             scaled_customer = scaler.transform(customer)
