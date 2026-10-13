@@ -19,8 +19,10 @@ st.markdown(
     """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-html, body, [class*="st-"], label, input { font-family: 'IBM Plex Sans', sans-serif; }
-h1, h2, h3, h4, .kpi-value, .hero h1 { font-family: 'Manrope', sans-serif; }
+.stApp, .stApp p, .stApp label, .stApp input, .stApp li, .stApp td, .stApp th { font-family: 'IBM Plex Sans', sans-serif; }
+h1, h2, h3, h4, .kpi-value, .hero h1, .side-title { font-family: 'Manrope', sans-serif; }
+/* keep Streamlit's own icon font intact */
+[data-testid="stIconMaterial"], .material-symbols-rounded { font-family: 'Material Symbols Rounded' !important; }
 
 #MainMenu, footer, header[data-testid="stHeader"] { visibility: hidden; height: 0; }
 .stApp { background: #F4F6F9; }
@@ -29,7 +31,8 @@ h1, h2, h3, h4, .kpi-value, .hero h1 { font-family: 'Manrope', sans-serif; }
 /* sidebar */
 section[data-testid="stSidebar"] { background: #FFFFFF; border-right: 1px solid #DDE3EB; }
 section[data-testid="stSidebar"] .block-container { padding-top: 1rem; }
-section[data-testid="stSidebar"] details { border: 1px solid #DDE3EB; border-radius: 8px; background: #FAFBFC; }
+.side-title { color: #14213D; font-weight: 700; font-size: .95rem; margin: .9rem 0 .35rem 0;
+              padding-bottom: .3rem; border-bottom: 2px solid #DDE3EB; }
 
 /* header */
 .hero { background: #14213D; border-radius: 12px; padding: 1.4rem 1.8rem; margin-bottom: 1.1rem; }
@@ -136,26 +139,26 @@ with st.sidebar:
     st.caption("Change any value and the dashboard updates instantly.")
     st.selectbox("Start from an example", list(PRESETS), key="preset", on_change=apply_preset)
 
-    with st.expander("1. Profile and activity", expanded=True):
-        st.number_input("Annual income", 0, step=1000, key="income")
-        st.number_input("Days since last purchase", 0, key="recency",
-                        help="Lower means the customer bought more recently.")
-        st.number_input("Website visits per month", 0, key="visits")
-        st.slider("Marketing campaigns accepted", 0, 5, key="campaigns",
-                  help="How many of the 5 past campaigns this customer responded to.")
+    st.markdown('<div class="side-title">Profile and activity</div>', unsafe_allow_html=True)
+    st.number_input("Annual income", 0, step=1000, key="income")
+    st.number_input("Days since last purchase", 0, key="recency",
+                    help="Lower means the customer bought more recently.")
+    st.number_input("Website visits per month", 0, key="visits")
+    st.slider("Marketing campaigns accepted", 0, 5, key="campaigns",
+              help="How many of the 5 past campaigns this customer responded to.")
 
-    with st.expander("2. Spending by category", expanded=False):
-        st.number_input("Wine", 0, key="wines")
-        st.number_input("Meat", 0, key="meat")
-        st.number_input("Fish", 0, key="fish")
-        st.number_input("Fruit", 0, key="fruits")
-        st.number_input("Sweets", 0, key="sweets")
-        st.number_input("Gold products", 0, key="gold")
+    st.markdown('<div class="side-title">Spending by category</div>', unsafe_allow_html=True)
+    st.number_input("Wine", 0, key="wines")
+    st.number_input("Meat", 0, key="meat")
+    st.number_input("Fish", 0, key="fish")
+    st.number_input("Fruit", 0, key="fruits")
+    st.number_input("Sweets", 0, key="sweets")
+    st.number_input("Gold products", 0, key="gold")
 
-    with st.expander("3. Number of purchases by channel", expanded=False):
-        st.number_input("Web", 0, key="web")
-        st.number_input("Catalog", 0, key="catalog")
-        st.number_input("Store", 0, key="store")
+    st.markdown('<div class="side-title">Purchases by channel</div>', unsafe_allow_html=True)
+    st.number_input("Web", 0, key="web")
+    st.number_input("Catalog", 0, key="catalog")
+    st.number_input("Store", 0, key="store")
 
 # ============================================================ prediction (live)
 s = st.session_state
@@ -343,4 +346,3 @@ Each segment has an average customer, and the prediction shows which group the c
 edit `CLUSTER_NAMES` near the top of `app.py`.
 """
         )
-
