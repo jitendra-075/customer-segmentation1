@@ -34,6 +34,20 @@ section[data-testid="stSidebar"] .block-container { padding-top: 1rem; }
 .side-title { color: #14213D; font-weight: 700; font-size: .95rem; margin: .9rem 0 .35rem 0;
               padding-bottom: .3rem; border-bottom: 2px solid #DDE3EB; }
 
+/* readable text on light backgrounds, even if the browser/Streamlit theme is dark */
+section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3, section[data-testid="stSidebar"] h4,
+section[data-testid="stSidebar"] label, section[data-testid="stSidebar"] label p,
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #14213D !important; }
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #5B6B7F !important; }
+section[data-testid="stSidebar"] .side-title { color: #14213D !important; }
+button[data-baseweb="tab"], button[data-baseweb="tab"] p { color: #14213D; }
+[data-testid="stExpander"] summary, [data-testid="stExpander"] summary p,
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p { color: #14213D; }
+.stApp [data-testid="stMarkdownContainer"] li, .stApp [data-testid="stMarkdownContainer"] strong { color: #14213D; }
+
 /* header */
 .hero { background: #14213D; border-radius: 12px; padding: 1.4rem 1.8rem; margin-bottom: 1.1rem; }
 .hero h1 { color: #FFFFFF; font-size: 1.6rem; font-weight: 800; margin: 0; }
@@ -55,7 +69,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] { background: #FFFFFF; border-co
 
 /* tabs */
 button[data-baseweb="tab"] { font-weight: 600; }
-button[data-baseweb="tab"][aria-selected="true"] { color: #2F5BEA; }
+button[data-baseweb="tab"][aria-selected="true"], button[data-baseweb="tab"][aria-selected="true"] p { color: #2F5BEA; }
 </style>
 """,
     unsafe_allow_html=True,
