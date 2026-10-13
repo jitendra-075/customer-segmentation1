@@ -55,7 +55,7 @@ if submitted:
     total_spending = wines + fruits + meat + fish + sweets + gold
     total_purchases = web_purchases + catalog_purchases + store_purchases
 
-    customer = pd.DataFrame([{
+       customer = pd.DataFrame([{
         "Income": income,
         "Recency": recency,
         "MntWines": wines,
@@ -71,7 +71,9 @@ if submitted:
         "Total_Spending": total_spending,
         "Total_Purchases": total_purchases,
         "Total_Campaign_Acceptance": campaign_acceptance
-    }})[features]
+    }])
+
+    customer = customer[features]
 
     scaled_customer = scaler.transform(customer)
     cluster = int(kmeans.predict(scaled_customer)[0])
